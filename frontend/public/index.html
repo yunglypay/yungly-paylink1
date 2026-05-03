@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Yungly PayLink</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#111111;--white:#ffffff;
+  --lav:#D8DEFF;--lav-mid:#8B9FFF;--lav-dark:#4A5AE8;--lav-deep:#2D3BAF;
+  --bg:#F4F5FB;--surface:#ffffff;
+  --muted:#6B7280;--border:rgba(0,0,0,0.07);
+  --success:#16A34A;--danger:#DC2626;--warn:#D97706;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --radius:14px;--radius-sm:10px;--radius-lg:20px;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--black);min-height:100vh;font-size:15px}
+
+/* ── LAYOUT ── */
+#app{display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--black);color:var(--white);display:flex;flex-direction:column;padding:24px 16px;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.sidebar.hidden{display:none}
+.main{flex:1;margin-left:240px;min-height:100vh;display:flex;flex-direction:column}
+.main.full{margin-left:0}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+.content{padding:28px;flex:1}
+
+/* ── SIDEBAR ── */
+.logo{font-size:24px;font-weight:700;letter-spacing:-0.5px;margin-bottom:32px;padding:0 8px}
+.logo span{color:var(--lav-mid)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:14px;font-weight:500;color:rgba(255,255,255,0.6);transition:all 0.15s;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:var(--white)}
+.nav-item.active{background:var(--lav-dark);color:var(--white)}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)}
+.user-chip{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius-sm)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--lav-dark);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--white);flex-shrink:0}
+.avatar.lg{width:48px;height:48px;font-size:16px}
+.avatar.xl{width:64px;height:64px;font-size:22px}
+
+/* ── SCREENS ── */
+.screen{display:none}.screen.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:20px}
+.card-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.stat-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:18px 20px}
+.stat-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:6px;letter-spacing:0.3px}
+.stat-value{font-size:28px;font-weight:700;letter-spacing:-1px}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* ── FORMS ── */
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.4px;text-transform:uppercase}
+.form-input{background:var(--bg);border:1.5px solid transparent;border-radius:var(--radius-sm);padding:11px 14px;font-size:14px;font-family:var(--font);color:var(--black);width:100%;outline:none;transition:border-color 0.15s}
+.form-input:focus{border-color:var(--lav-dark);background:var(--white)}
+.form-input::placeholder{color:var(--muted)}
+select.form-input{cursor:pointer}
+textarea.form-input{resize:vertical;min-height:80px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;font-family:var(--font)}
+.btn-primary{background:var(--black);color:var(--white)}.btn-primary:hover{opacity:0.85}
+.btn-accent{background:var(--lav-dark);color:var(--white)}.btn-accent:hover{background:var(--lav-deep)}
+.btn-lav{background:var(--lav);color:var(--lav-dark)}.btn-lav:hover{background:var(--lav-mid);color:var(--white)}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--black)}.btn-ghost:hover{background:var(--bg)}
+.btn-danger{background:#FEE2E2;color:var(--danger)}.btn-danger:hover{background:var(--danger);color:var(--white)}
+.btn-full{width:100%}
+.btn-lg{padding:14px 24px;font-size:15px;border-radius:var(--radius)}
+.btn-sm{padding:7px 14px;font-size:12px}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600}
+.badge-active{background:#DCFCE7;color:#15803D}
+.badge-paid{background:var(--lav);color:var(--lav-dark)}
+.badge-expired{background:#F3F4F6;color:var(--muted)}
+.badge-cancelled{background:#FEE2E2;color:var(--danger)}
+.badge-verified{background:var(--lav);color:var(--lav-dark)}
+.badge-warn{background:#FEF3C7;color:var(--warn)}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:600;color:var(--muted);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);letter-spacing:0.4px;text-transform:uppercase}
+td{font-size:13px;padding:12px 14px;border-bottom:1px solid var(--border);color:var(--black)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+
+/* ── MISC ── */
+.section-title{font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:6px}
+.section-sub{font-size:14px;color:var(--muted);margin-bottom:24px}
+.divider{height:1px;background:var(--border);margin:20px 0}
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+.link-url{font-family:var(--mono);font-size:12px;color:var(--lav-dark);background:var(--lav);padding:8px 12px;border-radius:var(--radius-sm);word-break:break-all;border:1px dashed var(--lav-mid)}
+.progress-bar{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:var(--lav-dark);border-radius:4px;transition:width 0.4s}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block}
+.row{display:flex;align-items:center;gap:12px}
+.row-between{display:flex;justify-content:space-between;align-items:center}
+.flex-col{display:flex;flex-direction:column;gap:8px}
+.gap-12{gap:12px}
+.mt-8{margin-top:8px}.mt-16{margin-top:16px}.mt-24{margin-top:24px}
+.text-muted{color:var(--muted)}.text-sm{font-size:13px}.text-xs{font-size:12px}
+.text-success{color:var(--success)}.text-danger{color:var(--danger)}
+.font-mono{font-family:var(--mono)}
+.guardian-box{background:var(--lav);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--lav-dark);font-weight:500;display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.alert{border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;margin-bottom:16px}
+.alert-success{background:#DCFCE7;color:#15803D}
+.alert-danger{background:#FEE2E2;color:var(--danger)}
+.alert-info{background:var(--lav);color:var(--lav-dark)}
+
+/* ── PAY PAGE (public) ── */
+.pay-page{min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.pay-card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);width:100%;max-width:400px;overflow:hidden}
+.pay-header{background:var(--black);color:var(--white);padding:20px 24px}
+.pay-body{padding:24px}
+.pay-method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.pay-method{background:var(--bg);border:2px solid transparent;border-radius:var(--radius-sm);padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;color:var(--muted)}
+.pay-method.sel{border-color:var(--black);background:var(--white);color:var(--black)}
+
+/* ── LOGIN ── */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--black);padding:20px}
+.login-card{background:var(--white);border-radius:var(--radius-lg);width:100%;max-width:380px;padding:36px 32px}
+.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.role-btn{border:2px solid var(--border);border-radius:var(--radius-sm);padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.15s;font-size:12px;font-weight:600;color:var(--muted);background:var(--bg)}
+.role-btn:hover{border-color:var(--lav-mid)}
+.role-btn.sel{border-color:var(--lav-dark);background:var(--lav);color:var(--lav-dark)}
+.role-icon{font-size:22px;display:block;margin-bottom:4px}
+
+/* ── ONBOARDING ── */
+.onboard-step{display:none}.onboard-step.active{display:block}
+.step-dots{display:flex;gap:6px;justify-content:center;margin-bottom:20px}
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all 0.2s}
+.step-dot.active{background:var(--lav-dark);width:24px;border-radius:4px}
+
+/* ── RECEIPT ── */
+.receipt-card{border:2px dashed var(--border);border-radius:var(--radius);padding:20px;background:var(--bg)}
+.receipt-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.receipt-row:last-child{border:none}
+.receipt-key{color:var(--muted)}.receipt-val{font-weight:600}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--white);border-radius:var(--radius-lg);width:100%;max-width:440px;padding:28px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+
+/* ── TOPBAR ROLE TABS ── */
+.role-tabs{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:100px}
+.role-tab{padding:6px 16px;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;color:var(--muted);border:none;background:transparent;transition:all 0.15s}
+.role-tab.active{background:var(--black);color:var(--white)}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform 0.3s}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .main.full{margin-left:0}
+  .content{padding:16px}
+  .card-grid{grid-template-columns:1fr 1fr}
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.screen.active{animation:fadeIn 0.2s ease}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="login-page">
+  <div class="login-card">
+    <div style="font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px">Yungly<span style="color:var(--lav-dark)">.</span></div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:28px">PayLink — Sign in to continue</div>
+    <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.4px;text-transform:uppercase;margin-bottom:10px">Choose your role</div>
+    <div class="role-grid">
+      <div class="role-btn sel" onclick="selectRole('teen',this)"><span class="role-icon">🎨</span>Teen Creator</div>
+      <div class="role-btn" onclick="selectRole('parent',this)"><span class="role-icon">🛡</span>Guardian</div>
+      <div class="role-btn" onclick="selectRole('admin',this)"><span class="role-icon">⚙️</span>Admin</div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Phone number</div>
+      <input class="form-input" id="loginPhone" placeholder="Enter mobile number" value="9876543210"/>
+    </div>
+    <div id="loginAlert"></div>
+    <button class="btn btn-primary btn-full btn-lg" onclick="doLogin()">Continue →</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Demo mode — any number works</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appShell" style="display:none">
+<div id="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="logo">Yungly<span>.</span></div>
+    <div id="sidebarNav"></div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="sidebarAvatar">?</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--white)" id="sidebarName">User</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5)" id="sidebarRole">Role</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-full mt-8" style="color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.1);font-size:13px" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main" id="mainArea">
+    <div class="topbar">
+      <div style="font-size:16px;font-weight:700" id="topbarTitle">Dashboard</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="topbarActions"></div>
+      </div>
+    </div>
+    <div class="content" id="screenContainer"></div>
+  </div>
+</div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- PAY PAGE (public) -->
+<div id="payPage" style="display:none">
+  <div class="pay-page">
+    <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:20px;color:var(--black)">Yungly<span style="color:var(--lav-dark)">.</span></div>
+    <div class="pay-card">
+      <div class="pay-header">
+        <div class="row row-between">
+          <div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);letter-spacing:0.5px;text-transform:uppercase">Paying</div>
+            <div style="font-size:20px;font-weight:700;margin-top:2px" id="payCreatorName">Adhil Designs</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px" id="payCreatorHandle">@adhil</div>
+          </div>
+          <div class="badge badge-verified">✓ Verified</div>
+        </div>
+        <div style="margin-top:16px;background:rgba(255,255,255,0.08);border-radius:var(--radius-sm);padding:12px">
+          <div style="font-size:12px;color:rgba(255,255,255,0.5)">Amount</div>
+          <div style="font-size:32px;font-weight:700;letter-spacing:-1px" id="payAmount">₹99</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px" id="payPurpose">Poster design</div>
+        </div>
+      </div>
+      <div class="pay-body">
+        <div id="payAlert"></div>
+        <div id="payStep1">
+          <div class="form-group">
+            <div class="form-label">Your name</div>
+            <input class="form-input" id="payCustomerName" placeholder="Enter your name"/>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Pay with</div>
+            <div class="pay-method-grid">
+              <div class="pay-method sel" onclick="selectPayMethod('UPI',this)">UPI</div>
+              <div class="pay-method" onclick="selectPayMethod('Card',this)">Card</div>
+              <div class="pay-method" onclick="selectPayMethod('Netbanking',this)">Net Banking</div>
+            </div>
+          </div>
+          <div id="upiField" class="form-group">
+            <div class="form-label">UPI ID</div>
+            <input class="form-input" id="payUpiId" placeholder="yourname@upi"/>
+          </div>
+          <div class="guardian-box mt-8">
+            <span>🔒</span>
+            Your personal bank details are never shared with the creator. Payment processed by licensed gateway.
+          </div>
+          <button class="btn btn-primary btn-full btn-lg mt-16" onclick="initiatePayment()" id="payBtn">Pay ₹<span id="payBtnAmt">99</span> →</button>
+        </div>
+        <div id="payStep2" style="display:none;text-align:center;padding:20px 0">
+          <div style="width:64px;height:64px;border-radius:50%;background:var(--lav);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>
+          <div style="font-size:26px;font-weight:700;letter-spacing:-1px" id="paySuccessAmt">₹99 paid</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px" id="paySuccessTo">to Adhil Designs</div>
+          <div class="receipt-card mt-16" id="payReceipt"></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6">Need help? Contact <strong>support@yunglypay.in</strong></div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:16px;text-align:center">Powered by Yungly Pay · Licensed payment infrastructure</div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:3000/api';
+let currentUser = null;
+let currentRole = 'teen';
+let selectedPayMethod = 'UPI';
+let currentLinkId = null;
+
+// ─── ROLE SELECT (login) ──────────────────────────────────────────────────────
+function selectRole(role, el) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function doLogin() {
+  const phone = document.getElementById('loginPhone').value;
+  const alertEl = document.getElementById('loginAlert');
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone, role: currentRole })
+    });
+    const data = await res.json();
+    if (!res.ok) { alertEl.innerHTML = `<div class="alert alert-danger">${data.error}</div>`; return; }
+    currentUser = data.user;
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('appShell').style.display = 'block';
+    initApp();
+  } catch(e) {
+    // Demo fallback if backend not running
+    currentUser = { id:'u_adhil', name:'Adhil Rahman A', displayName:'Adhil Designs', handle:'@adhil', role: currentRole, walletBalance:499, monthlyReceived:2400, monthlyLimit:5000, parentId:'p_parent1', kycVerified:true };
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('appShell').style.display = 'block';
+    initApp();
+  }
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+}
+
+// ─── APP INIT ─────────────────────────────────────────────────────────────────
+function initApp() {
+  const role = currentUser.role;
+  document.getElementById('sidebarAvatar').textContent = currentUser.name?.slice(0,2).toUpperCase() || '?';
+  document.getElementById('sidebarName').textContent = currentUser.name || currentUser.displayName;
+  document.getElementById('sidebarRole').textContent = role === 'teen' ? '✦ Teen Creator' : role === 'parent' ? '🛡 Guardian' : '⚙ Admin';
+
+  const navs = {
+    teen:   [{icon:'🏠', label:'Dashboard', screen:'teenDash'}, {icon:'🔗', label:'My PayLinks', screen:'teenLinks'}, {icon:'💸', label:'Earnings', screen:'teenEarnings'}, {icon:'👤', label:'Profile', screen:'teenProfile'}],
+    parent: [{icon:'🏠', label:'Overview', screen:'parentDash'}, {icon:'🔔', label:'Alerts', screen:'parentAlerts'}, {icon:'⚙️', label:'Settings', screen:'parentSettings'}],
+    admin:  [{icon:'📊', label:'Stats', screen:'adminStats'}, {icon:'👥', label:'Users', screen:'adminUsers'}, {icon:'💳', label:'Transactions', screen:'adminTxns'}]
+  };
+
+  const nav = navs[role] || navs.teen;
+  document.getElementById('sidebarNav').innerHTML = nav.map((n,i) =>
+    `<div class="nav-item ${i===0?'active':''}" onclick="navigate('${n.screen}',this)">
+      <span class="nav-icon">${n.icon}</span>${n.label}
+    </div>`
+  ).join('');
+
+  navigate(nav[0].screen, document.querySelector('.nav-item'));
+}
+
+function navigate(screen, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderScreen(screen);
+}
+
+// ─── SCREEN ROUTER ────────────────────────────────────────────────────────────
+function renderScreen(name) {
+  document.getElementById('topbarTitle').textContent = {
+    teenDash:'Dashboard', teenLinks:'My PayLinks', teenEarnings:'Earnings', teenProfile:'Profile',
+    parentDash:'Guardian Overview', parentAlerts:'Alerts & Notifications', parentSettings:'Settings',
+    adminStats:'Platform Stats', adminUsers:'Users', adminTxns:'All Transactions'
+  }[name] || name;
+  const fn = { teenDash, teenLinks, teenEarnings, teenProfile, parentDash, parentAlerts, parentSettings, adminStats, adminUsers, adminTxns };
+  if (fn[name]) fn[name]();
+}
+
+// ─── TEEN: DASHBOARD ──────────────────────────────────────────────────────────
+async function teenDash() {
+  let links = [], txns = [];
+  try {
+    links = await (await fetch(`${API}/paylinks?creatorId=${currentUser.id}`)).json();
+    txns  = await (await fetch(`${API}/transactions?userId=${currentUser.id}`)).json();
+  } catch(e) {
+    links = getDemoLinks(); txns = getDemoTxns();
+  }
+  const balance = currentUser.walletBalance || 499;
+  const monthly = currentUser.monthlyReceived || 2400;
+  const limit = currentUser.monthlyLimit || 5000;
+  const pct = Math.round(monthly/limit*100);
+  const active = links.filter(l=>l.status==='active').length;
+  const paid = links.filter(l=>l.status==='paid').length;
+  const total = txns.reduce((s,t)=>s+t.amount,0);
+
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">Welcome back, ${currentUser.displayName || currentUser.name} 👋</div>
+    <div class="section-sub">Here's your creator overview</div>
+    <div class="card-grid">
+      <div class="stat-card"><div class="stat-label">Wallet Balance</div><div class="stat-value">₹${balance}</div><div class="stat-sub">Available to withdraw</div></div>
+      <div class="stat-card"><div class="stat-label">This Month</div><div class="stat-value">₹${monthly}</div><div class="stat-sub">of ₹${limit} limit</div><div class="progress-bar mt-8"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+      <div class="stat-card"><div class="stat-label">Active Links</div><div class="stat-value">${active}</div><div class="stat-sub">${paid} paid total</div></div>
+      <div class="stat-card"><div class="stat-label">Total Earned</div><div class="stat-value">₹${total||499}</div><div class="stat-sub">All time</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px">
+      <div class="card">
+        <div class="row-between mb-8"><strong>Recent PayLinks</strong><button class="btn btn-sm btn-lav" onclick="navigate('teenLinks',null)">View all</button></div>
+        ${links.slice(0,4).map(l=>`
+          <div class="receipt-row">
+            <div><div style="font-size:13px;font-weight:600">${l.purpose}</div><div class="text-xs text-muted">₹${l.amount}</div></div>
+            <span class="badge badge-${l.status}">${l.status}</span>
+          </div>`).join('') || '<div class="empty">No links yet</div>'}
+        <button class="btn btn-accent btn-full mt-16" onclick="openCreateLink()">+ Create PayLink</button>
+      </div>
+      <div class="card">
+        <div class="row-between mb-8"><strong>Recent Earnings</strong></div>
+        ${txns.slice(0,4).map(t=>`
+          <div class="receipt-row">
+            <div><div style="font-size:13px;font-weight:600">${t.purpose}</div><div class="text-xs text-muted">from ${t.from}</div></div>
+            <span class="text-success font-mono" style="font-size:14px;font-weight:700">+₹${t.amount}</span>
+          </div>`).join('') || '<div class="empty">No earnings yet</div>'}
+      </div>
+    </div>`;
+}
+
+// ─── TEEN: LINKS ──────────────────────────────────────────────────────────────
+async function teenLinks() {
+  let links = [];
+  try { links = await (await fetch(`${API}/paylinks?creatorId=${currentUser.id}`)).json(); }
+  catch(e) { links = getDemoLinks(); }
+  document.getElementById('topbarActions').innerHTML = `<button class="btn btn-accent" onclick="openCreateLink()">+ New PayLink</button>`;
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">My PayLinks</div>
+    <div class="section-sub">Share these links to receive payments from anyone</div>
+    ${links.length === 0 ? '<div class="card empty">No PayLinks yet — create your first one!</div>' :
+    `<div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Purpose</th><th>Amount</th><th>Status</th><th>Expires</th><th>Actions</th></tr></thead>
+      <tbody>${links.map(l=>`<tr>
+        <td><strong>${l.purpose}</strong><div class="text-xs text-muted">${l.displayName}</div></td>
+        <td class="font-mono">₹${l.amount}</td>
+        <td><span class="badge badge-${l.status}">${l.status}</span></td>
+        <td class="text-xs text-muted">${new Date(l.expiresAt).toLocaleDateString('en-IN')}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            ${l.status==='active'?`<button class="btn btn-sm btn-lav" onclick="copyLink('${l.id}')">Copy</button>
+            <button class="btn btn-sm btn-ghost" onclick="viewPayPage('${l.id}')">Preview</button>`:
+            l.status==='paid'?`<button class="btn btn-sm btn-ghost" onclick="viewReceipt('${l.id}')">Receipt</button>`:''}
+          </div>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`}`;
+}
+
+// ─── TEEN: EARNINGS ───────────────────────────────────────────────────────────
+async function teenEarnings() {
+  let txns = [];
+  try { txns = await (await fetch(`${API}/transactions?userId=${currentUser.id}`)).json(); }
+  catch(e) { txns = getDemoTxns(); }
+  document.getElementById('topbarActions').innerHTML = '';
+  const total = txns.reduce((s,t)=>s+t.amount,0);
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">Earnings</div>
+    <div class="section-sub">All payments received through Yungly PayLink</div>
+    <div class="card-grid">
+      <div class="stat-card"><div class="stat-label">Total Earned</div><div class="stat-value">₹${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value">${txns.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Avg. per link</div><div class="stat-value">₹${txns.length?Math.round(total/txns.length):0}</div></div>
+    </div>
+    <div class="card mt-16"><div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Purpose</th><th>From</th><th>Method</th><th>Amount</th><th>Txn ID</th></tr></thead>
+      <tbody>${txns.map(t=>`<tr>
+        <td class="text-xs text-muted">${new Date(t.createdAt).toLocaleDateString('en-IN')}</td>
+        <td><strong>${t.purpose}</strong></td>
+        <td>${t.from}</td>
+        <td class="text-xs">${t.paymentMethod||'UPI'}</td>
+        <td class="text-success font-mono"><strong>+₹${t.amount}</strong></td>
+        <td class="font-mono text-xs text-muted">${t.id}</td>
+      </tr>`).join('') || '<tr><td colspan="6" class="empty">No transactions yet</td></tr>'}
+      </tbody></table></div></div>`;
+}
+
+// ─── TEEN: PROFILE ────────────────────────────────────────────────────────────
+function teenProfile() {
+  document.getElementById('topbarActions').innerHTML = '';
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">Profile</div>
+    <div class="section-sub">Your creator identity on Yungly</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div style="text-align:center;padding:20px 0">
+          <div class="avatar xl" style="margin:0 auto 12px;width:72px;height:72px;font-size:24px">${(currentUser.displayName||'AD').slice(0,2).toUpperCase()}</div>
+          <div style="font-size:20px;font-weight:700">${currentUser.displayName}</div>
+          <div style="font-size:13px;color:var(--muted)">${currentUser.handle}</div>
+          <div class="badge badge-verified" style="margin-top:8px">✓ KYC Verified</div>
+        </div>
+        <div class="divider"></div>
+        <div class="receipt-row"><span class="receipt-key">Full Name</span><span class="receipt-val">${currentUser.name}</span></div>
+        <div class="receipt-row"><span class="receipt-key">Phone</span><span class="receipt-val">${currentUser.phone||'98765xxxxx'}</span></div>
+        <div class="receipt-row"><span class="receipt-key">Role</span><span class="receipt-val">Teen Creator</span></div>
+        <div class="receipt-row"><span class="receipt-key">Guardian Approved</span><span class="receipt-val text-success">✓ Yes</span></div>
+      </div>
+      <div class="card">
+        <div style="font-size:16px;font-weight:700;margin-bottom:14px">Account Status</div>
+        <div class="guardian-box mb-8">🛡 Your guardian has approved your account. All payments are monitored and reported.</div>
+        <div class="receipt-row"><span class="receipt-key">Monthly Limit</span><span class="receipt-val">₹${currentUser.monthlyLimit||5000}</span></div>
+        <div class="receipt-row"><span class="receipt-key">Received this month</span><span class="receipt-val">₹${currentUser.monthlyReceived||2400}</span></div>
+        <div class="receipt-row"><span class="receipt-key">Wallet Balance</span><span class="receipt-val text-success">₹${currentUser.walletBalance||499}</span></div>
+        <div class="mt-16">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">Blocked categories</div>
+          <div class="pill-row">
+            ${['Adult','Gambling','Crypto','Alcohol','Weapons'].map(c=>`<span class="badge badge-expired">${c}</span>`).join('')}
+          </div>
+        </div>
+        <div class="alert alert-info mt-8" style="font-size:12px">Limits and blocked categories are managed by your guardian</div>
+      </div>
+    </div>`;
+}
+
+// ─── PARENT: DASH ─────────────────────────────────────────────────────────────
+async function parentDash() {
+  let data = {};
+  try { data = await (await fetch(`${API}/parent/p_parent1`)).json(); }
+  catch(e) { data = { parent: { settings:{monthlyLimit:5000,perLinkLimit:1000}, notifications:[] }, teen: { name:'Adhil Rahman A', displayName:'Adhil Designs', handle:'@adhil', monthlyReceived:2400, walletBalance:499, monthlyLimit:5000 } }; }
+  const { teen, parent } = data;
+  const pct = Math.round((teen?.monthlyReceived||2400)/(teen?.monthlyLimit||5000)*100);
+  document.getElementById('topbarActions').innerHTML = '';
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">Guardian Overview</div>
+    <div class="section-sub">Monitor and manage ${teen?.displayName || 'your teen'}'s activity</div>
+    <div class="card-grid">
+      <div class="stat-card"><div class="stat-label">This Month</div><div class="stat-value">₹${teen?.monthlyReceived||2400}</div><div class="stat-sub">of ₹${teen?.monthlyLimit||5000} limit · ${pct}%</div><div class="progress-bar mt-8"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+      <div class="stat-card"><div class="stat-label">Wallet Balance</div><div class="stat-value">₹${teen?.walletBalance||499}</div><div class="stat-sub">${teen?.displayName}</div></div>
+      <div class="stat-card"><div class="stat-label">Unread Alerts</div><div class="stat-value">${(parent?.notifications||[]).filter(n=>!n.read).length}</div><div class="stat-sub"><button class="btn btn-sm btn-lav" onclick="navigate('parentAlerts',null)">View all</button></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px">
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px">Teen Profile</div>
+        <div class="row mb-8">
+          <div class="avatar lg">${(teen?.displayName||'AD').slice(0,2).toUpperCase()}</div>
+          <div><div style="font-weight:700">${teen?.displayName}</div><div class="text-sm text-muted">${teen?.handle || '@adhil'}</div></div>
+        </div>
+        <div class="guardian-box">✓ Account is active and guardian-approved. All payments require gateway verification.</div>
+      </div>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px">Quick Settings</div>
+        <div class="receipt-row"><span class="receipt-key">Per-link limit</span><span class="receipt-val">₹${parent?.settings?.perLinkLimit||1000}</span></div>
+        <div class="receipt-row"><span class="receipt-key">Monthly limit</span><span class="receipt-val">₹${parent?.settings?.monthlyLimit||5000}</span></div>
+        <button class="btn btn-ghost btn-full mt-8" onclick="navigate('parentSettings',null)">Edit settings →</button>
+      </div>
+    </div>`;
+}
+
+// ─── PARENT: ALERTS ───────────────────────────────────────────────────────────
+async function parentAlerts() {
+  let notifs = [];
+  try {
+    const data = await (await fetch(`${API}/parent/p_parent1`)).json();
+    notifs = data.parent?.notifications || [];
+  } catch(e) {
+    notifs = [
+      {id:'n1', type:'payment_received', message:'Adhil Designs received ₹99 for "Poster design" from Arjun S', amount:99, read:false, createdAt:new Date().toISOString()},
+      {id:'n2', type:'payment_received', message:'Adhil Designs received ₹150 for "Reel edit" from Priya M', amount:150, read:true, createdAt:new Date(Date.now()-86400000).toISOString()},
+      {id:'n3', type:'payment_received', message:'Adhil Designs received ₹250 for "Logo design" from Rahul K', amount:250, read:true, createdAt:new Date(Date.now()-86400000*2).toISOString()}
+    ];
+  }
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">Alerts & Notifications</div>
+    <div class="section-sub">Real-time notifications for every payment received</div>
+    ${notifs.length===0?'<div class="card empty">No notifications yet</div>':
+    notifs.map(n=>`
+      <div class="card" style="margin-bottom:10px;border-left:3px solid ${n.read?'var(--border)':'var(--lav-dark)'}">
+        <div class="row-between">
+          <div>
+            <div style="font-size:13px;font-weight:${n.read?'400':'600'}">${n.message}</div>
+            <div class="text-xs text-muted mt-8">${new Date(n.createdAt).toLocaleString('en-IN')}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <span class="text-success font-mono" style="font-weight:700">+₹${n.amount}</span>
+            ${!n.read?'<span class="notif-dot"></span>':''}
+          </div>
+        </div>
+      </div>`).join('')}`;
+}
+
+// ─── PARENT: SETTINGS ─────────────────────────────────────────────────────────
+async function parentSettings() {
+  let settings = { perLinkLimit:1000, dailyLimit:2000, monthlyLimit:5000 };
+  try {
+    const data = await (await fetch(`${API}/parent/p_parent1`)).json();
+    settings = data.parent?.settings || settings;
+  } catch(e) {}
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">Guardian Settings</div>
+    <div class="section-sub">Control spending limits and blocked categories</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:16px">Payment Limits</div>
+        <div class="form-group"><div class="form-label">Per-link limit (₹)</div><input class="form-input" id="settingPerLink" value="${settings.perLinkLimit}" type="number"/></div>
+        <div class="form-group"><div class="form-label">Daily limit (₹)</div><input class="form-input" id="settingDaily" value="${settings.dailyLimit}" type="number"/></div>
+        <div class="form-group"><div class="form-label">Monthly limit (₹)</div><input class="form-input" id="settingMonthly" value="${settings.monthlyLimit}" type="number"/></div>
+        <button class="btn btn-primary btn-full" onclick="saveSettings()">Save limits</button>
+      </div>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:16px">Blocked Categories</div>
+        ${['adult','gambling','crypto','alcohol','weapons','donations'].map(c=>`
+          <div class="receipt-row row-between">
+            <span style="text-transform:capitalize;font-size:13px">${c}</span>
+            <span class="badge badge-${(settings.blockedCategories||[]).includes(c)?'cancelled':'active'}">${(settings.blockedCategories||[]).includes(c)?'Blocked':'Allowed'}</span>
+          </div>`).join('')}
+        <div class="alert alert-info mt-8" style="font-size:12px">Category blocking is enforced automatically by Yungly</div>
+      </div>
+    </div>`;
+}
+
+async function saveSettings() {
+  const s = {
+    perLinkLimit: +document.getElementById('settingPerLink').value,
+    dailyLimit: +document.getElementById('settingDaily').value,
+    monthlyLimit: +document.getElementById('settingMonthly').value
+  };
+  try { await fetch(`${API}/parent/p_parent1/settings`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(s) }); }
+  catch(e) {}
+  showToast('Settings saved!');
+}
+
+// ─── ADMIN: STATS ─────────────────────────────────────────────────────────────
+async function adminStats() {
+  let stats = {};
+  try { stats = await (await fetch(`${API}/admin/stats`)).json(); }
+  catch(e) { stats = { totalUsers:2, totalLinks:3, activeLinks:0, totalTxns:3, totalVolume:499, successRate:100, recentTxns:getDemoTxns() }; }
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">Platform Stats</div>
+    <div class="section-sub">Yungly PayLink real-time overview</div>
+    <div class="card-grid">
+      <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">${stats.totalUsers}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Links</div><div class="stat-value">${stats.totalLinks}</div></div>
+      <div class="stat-card"><div class="stat-label">Active Links</div><div class="stat-value">${stats.activeLinks}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Volume</div><div class="stat-value">₹${stats.totalVolume}</div></div>
+      <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value">${stats.totalTxns}</div></div>
+      <div class="stat-card"><div class="stat-label">Success Rate</div><div class="stat-value">${stats.successRate}%</div></div>
+    </div>
+    <div class="card mt-16">
+      <div style="font-weight:700;margin-bottom:12px">Recent Transactions</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Purpose</th><th>From</th><th>Amount</th><th>Status</th><th>Txn ID</th></tr></thead>
+        <tbody>${(stats.recentTxns||[]).map(t=>`<tr>
+          <td class="text-xs text-muted">${new Date(t.createdAt).toLocaleDateString('en-IN')}</td>
+          <td><strong>${t.purpose}</strong></td><td>${t.from}</td>
+          <td class="text-success font-mono">+₹${t.amount}</td>
+          <td><span class="badge badge-${t.status==='success'?'active':'expired'}">${t.status}</span></td>
+          <td class="font-mono text-xs text-muted">${t.id}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+async function adminUsers() {
+  let users = [];
+  try { users = await (await fetch(`${API}/admin/users`)).json(); }
+  catch(e) { users = [{ id:'u_adhil', name:'Adhil Rahman A', displayName:'Adhil Designs', handle:'@adhil', walletBalance:499, monthlyReceived:2400, kycVerified:true }]; }
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">Users</div>
+    <div class="section-sub">All registered teen creators</div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Creator</th><th>Handle</th><th>Wallet</th><th>Monthly</th><th>KYC</th></tr></thead>
+      <tbody>${users.map(u=>`<tr>
+        <td><strong>${u.displayName}</strong><div class="text-xs text-muted">${u.name}</div></td>
+        <td class="font-mono text-xs">${u.handle}</td>
+        <td class="font-mono">₹${u.walletBalance||0}</td>
+        <td class="font-mono">₹${u.monthlyReceived||0}</td>
+        <td><span class="badge badge-${u.kycVerified?'active':'warn'}">${u.kycVerified?'Verified':'Pending'}</span></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+async function adminTxns() {
+  let txns = [];
+  try { txns = await (await fetch(`${API}/admin/transactions`)).json(); }
+  catch(e) { txns = getDemoTxns(); }
+  document.getElementById('screenContainer').innerHTML = `
+    <div class="section-title">All Transactions</div>
+    <div class="section-sub">Complete audit log of all payments</div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Purpose</th><th>From</th><th>To</th><th>Method</th><th>Amount</th><th>Status</th><th>Txn ID</th></tr></thead>
+      <tbody>${txns.map(t=>`<tr>
+        <td class="text-xs text-muted">${new Date(t.createdAt).toLocaleDateString('en-IN')}</td>
+        <td><strong>${t.purpose}</strong></td>
+        <td>${t.from}</td><td class="text-xs">${t.to}</td>
+        <td class="text-xs">${t.paymentMethod||'UPI'}</td>
+        <td class="text-success font-mono"><strong>+₹${t.amount}</strong></td>
+        <td><span class="badge badge-${t.status==='success'?'active':'danger'}">${t.status}</span></td>
+        <td class="font-mono text-xs text-muted">${t.id}</td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+// ─── CREATE LINK MODAL ────────────────────────────────────────────────────────
+function openCreateLink() {
+  showModal(`
+    <div class="modal-title">Create PayLink</div>
+    <div class="modal-sub">Share with customers to receive payment</div>
+    <div id="createAlert"></div>
+    <div class="form-group"><div class="form-label">Amount (₹)</div><input class="form-input" id="clAmount" placeholder="e.g. 499" type="number"/></div>
+    <div class="form-group"><div class="form-label">Purpose</div><input class="form-input" id="clPurpose" placeholder="e.g. Logo design, Reel edit..."/></div>
+    <div class="form-group"><div class="form-label">Note (optional)</div><textarea class="form-input" id="clNote" placeholder="Any extra info for your customer"></textarea></div>
+    <div class="form-group"><div class="form-label">Expires in (days)</div>
+      <select class="form-input" id="clExpiry"><option value="3">3 days</option><option value="7" selected>7 days</option><option value="14">14 days</option><option value="30">30 days</option></select>
+    </div>
+    <div class="guardian-box mb-8">🛡 Your guardian will be notified when this link receives a payment.</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-accent" style="flex:1" onclick="createLink()">Generate PayLink →</button>
+    </div>
+    <div id="clResult" style="display:none" class="mt-16">
+      <div class="form-label mb-8">Your PayLink</div>
+      <div class="link-url" id="clUrl"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-lav btn-full" onclick="copyLinkUrl()">Copy Link</button>
+        <button class="btn btn-ghost btn-full" onclick="viewPayPageDirect()">Preview →</button>
+      </div>
+    </div>`);
+}
+
+let lastCreatedLinkId = null;
+async function createLink() {
+  const amount = document.getElementById('clAmount').value;
+  const purpose = document.getElementById('clPurpose').value;
+  if (!amount || !purpose) { document.getElementById('createAlert').innerHTML = '<div class="alert alert-danger">Please fill all required fields</div>'; return; }
+  try {
+    const res = await fetch(`${API}/paylinks`, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ creatorId: currentUser.id, amount:+amount, purpose, note: document.getElementById('clNote').value, expiryDays: +document.getElementById('clExpiry').value }) });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('createAlert').innerHTML = `<div class="alert alert-danger">${data.error}</div>`; return; }
+    lastCreatedLinkId = data.link.id;
+    document.getElementById('clUrl').textContent = data.payUrl;
+    document.getElementById('clResult').style.display = 'block';
+  } catch(e) {
+    // demo fallback
+    lastCreatedLinkId = 'lnk_demo';
+    document.getElementById('clUrl').textContent = `http://localhost:3000/pay/lnk_demo`;
+    document.getElementById('clResult').style.display = 'block';
+  }
+}
+
+function copyLinkUrl() {
+  const url = document.getElementById('clUrl').textContent;
+  navigator.clipboard.writeText(url).then(()=>showToast('Link copied!')).catch(()=>showToast('Copy: ' + url));
+}
+
+function viewPayPageDirect() { if(lastCreatedLinkId) openPayPage(lastCreatedLinkId); closeModal(); }
+function copyLink(id) { navigator.clipboard.writeText(`http://localhost:3000/pay/${id}`).then(()=>showToast('Link copied!')).catch(()=>showToast('Copied!')); }
+function viewPayPage(id) { openPayPage(id); }
+
+// ─── RECEIPT MODAL ────────────────────────────────────────────────────────────
+async function viewReceipt(linkId) {
+  let link = getDemoLinks().find(l=>l.id===linkId)||{purpose:'Design',amount:99};
+  try {
+    const data = await (await fetch(`${API}/paylinks/${linkId}`)).json();
+    link = data.link;
+  } catch(e){}
+  showModal(`
+    <div class="modal-title">Payment Receipt</div>
+    <div class="modal-sub">Transaction confirmed by Yungly Pay</div>
+    <div class="receipt-card">
+      <div class="receipt-row"><span class="receipt-key">Txn ID</span><span class="receipt-val font-mono" style="font-size:11px">${link.txnId||'txn_'+linkId}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Purpose</span><span class="receipt-val">${link.purpose}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Amount</span><span class="receipt-val text-success">₹${link.amount}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Date</span><span class="receipt-val">${new Date(link.createdAt||Date.now()).toLocaleDateString('en-IN')}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Status</span><span class="receipt-val"><span class="badge badge-active">✓ Success</span></span></div>
+    </div>
+    <button class="btn btn-ghost btn-full mt-16" onclick="closeModal()">Close</button>`);
+}
+
+// ─── PAY PAGE ─────────────────────────────────────────────────────────────────
+async function openPayPage(linkId) {
+  currentLinkId = linkId;
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('payPage').style.display = 'block';
+  try {
+    const data = await (await fetch(`${API}/paylinks/${linkId}`)).json();
+    const { link, creator } = data;
+    document.getElementById('payCreatorName').textContent = creator.displayName;
+    document.getElementById('payCreatorHandle').textContent = creator.handle;
+    document.getElementById('payAmount').textContent = '₹' + link.amount;
+    document.getElementById('payBtnAmt').textContent = link.amount;
+    document.getElementById('payPurpose').textContent = link.purpose;
+    if (link.status !== 'active') document.getElementById('payAlert').innerHTML = `<div class="alert alert-danger">This link is ${link.status}</div>`;
+  } catch(e) {
+    document.getElementById('payCreatorName').textContent = 'Adhil Designs';
+    document.getElementById('payCreatorHandle').textContent = '@adhil';
+    document.getElementById('payAmount').textContent = '₹99';
+    document.getElementById('payBtnAmt').textContent = '99';
+    document.getElementById('payPurpose').textContent = 'Poster design';
+  }
+  document.getElementById('payStep1').style.display = 'block';
+  document.getElementById('payStep2').style.display = 'none';
+}
+
+function selectPayMethod(method, el) {
+  selectedPayMethod = method;
+  document.querySelectorAll('.pay-method').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('upiField').style.display = method==='UPI'?'flex':'none';
+}
+
+async function initiatePayment() {
+  const name = document.getElementById('payCustomerName').value;
+  if (!name) { document.getElementById('payAlert').innerHTML = '<div class="alert alert-danger">Please enter your name</div>'; return; }
+  const btn = document.getElementById('payBtn');
+  btn.textContent = 'Processing...'; btn.disabled = true;
+  await new Promise(r=>setTimeout(r,1800)); // simulate gateway
+  try {
+    const res = await fetch(`${API}/pay/${currentLinkId}/confirm`, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ customerName: name, paymentMethod: selectedPayMethod }) });
+    const data = await res.json();
+    showPaySuccess(data.receipt, name);
+  } catch(e) {
+    showPaySuccess({ txnId:'txn_demo_'+Date.now(), amount:99, purpose:'Poster design', from:name, to:'Adhil Designs', date:new Date().toISOString() }, name);
+  }
+}
+
+function showPaySuccess(receipt, name) {
+  document.getElementById('payStep1').style.display = 'none';
+  document.getElementById('payStep2').style.display = 'block';
+  document.getElementById('paySuccessAmt').textContent = `₹${receipt.amount} paid`;
+  document.getElementById('paySuccessTo').textContent = `to ${receipt.to}`;
+  document.getElementById('payReceipt').innerHTML = `
+    <div class="receipt-row"><span class="receipt-key">Txn ID</span><span class="receipt-val font-mono" style="font-size:11px">${receipt.txnId}</span></div>
+    <div class="receipt-row"><span class="receipt-key">Purpose</span><span class="receipt-val">${receipt.purpose}</span></div>
+    <div class="receipt-row"><span class="receipt-key">From</span><span class="receipt-val">${receipt.from}</span></div>
+    <div class="receipt-row"><span class="receipt-key">Date</span><span class="receipt-val">${new Date(receipt.date||Date.now()).toLocaleDateString('en-IN')}</span></div>`;
+}
+
+function backToApp() { document.getElementById('payPage').style.display='none'; document.getElementById('appShell').style.display='block'; }
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function showModal(html) { document.getElementById('modalContent').innerHTML = html; document.getElementById('modalOverlay').classList.remove('hidden'); }
+function closeModal(e) { if(!e||e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.add('hidden'); }
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--black);color:var(--white);padding:10px 20px;border-radius:100px;font-size:13px;font-weight:500;z-index:999;animation:fadeIn 0.2s ease';
+  t.textContent = msg; document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2500);
+}
+
+// ─── DEMO DATA ────────────────────────────────────────────────────────────────
+function getDemoLinks() {
+  return [
+    {id:'lnk_001',creatorId:'u_adhil',displayName:'Adhil Designs',amount:250,purpose:'Logo design',status:'paid',txnId:'txn_001',expiresAt:new Date(Date.now()+86400000*5).toISOString(),createdAt:new Date(Date.now()-86400000*2).toISOString()},
+    {id:'lnk_002',creatorId:'u_adhil',displayName:'Adhil Designs',amount:150,purpose:'Reel edit',status:'paid',txnId:'txn_002',expiresAt:new Date(Date.now()+86400000*4).toISOString(),createdAt:new Date(Date.now()-86400000).toISOString()},
+    {id:'lnk_003',creatorId:'u_adhil',displayName:'Adhil Designs',amount:99,purpose:'Poster design',status:'paid',txnId:'txn_003',expiresAt:new Date(Date.now()+86400000*6).toISOString(),createdAt:new Date().toISOString()}
+  ];
+}
+function getDemoTxns() {
+  return [
+    {id:'txn_001',amount:250,purpose:'Logo design',from:'Rahul K',to:'u_adhil',paymentMethod:'UPI',status:'success',createdAt:new Date(Date.now()-86400000*2).toISOString()},
+    {id:'txn_002',amount:150,purpose:'Reel edit',from:'Priya M',to:'u_adhil',paymentMethod:'Card',status:'success',createdAt:new Date(Date.now()-86400000).toISOString()},
+    {id:'txn_003',amount:99,purpose:'Poster design',from:'Arjun S',to:'u_adhil',paymentMethod:'UPI',status:'success',createdAt:new Date().toISOString()}
+  ];
+}
+
+// ─── CHECK PAY ROUTE ──────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const path = window.location.pathname;
+  if (path.startsWith('/pay/')) {
+    const linkId = path.split('/pay/')[1];
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('payPage').style.display = 'block';
+    openPayPage(linkId);
+  }
+});
+</script>
+</body>
+</html>
